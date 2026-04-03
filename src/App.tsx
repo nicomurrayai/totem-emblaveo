@@ -497,9 +497,6 @@ export default function App() {
                   <img alt="Foto capturada" className="stage__photo" src={session.capturedUrl} />
                 ) : null}
               </div>
-              <div className="info-strip">
-                <p>Sin filtros. Sin marcos. Solo tu captura original para validarla.</p>
-              </div>
             </div>
           </ScreenFrame>
         ) : null}
