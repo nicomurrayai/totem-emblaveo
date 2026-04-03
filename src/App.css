@@ -126,8 +126,6 @@ button {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 40px;
   padding: 24px 6px 8px;
 }
 
@@ -167,6 +165,11 @@ button {
 .hero-screen__cta {
   display: grid;
   gap: 18px;
+}
+
+.hero-screen__cta .action-button {
+  font-size: 1.35rem;
+  font-weight: 800;
 }
 
 .hero-screen__badge {

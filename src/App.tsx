@@ -369,12 +369,11 @@ export default function App() {
                   Acercate al visor, acomodate y completá el recorrido en menos de un
                   minuto.
                 </p>
-              </div>
-
-              <div className="hero-screen__cta">
-                <ActionButton fullWidth onClick={() => send({ type: 'BEGIN' })}>
-                  Participar
-                </ActionButton>
+                <div className="hero-screen__cta">
+                  <ActionButton fullWidth onClick={() => send({ type: 'BEGIN' })}>
+                    Participar
+                  </ActionButton>
+                </div>
               </div>
             </div>
 
