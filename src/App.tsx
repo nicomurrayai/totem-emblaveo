@@ -9,6 +9,7 @@ import {
 import { useMachine } from '@xstate/react';
 
 import logoPrimary from './assets/logo-primary.png';
+import pfizerLogo from './assets/pfizer-logo.png';
 import './App.css';
 import { kioskConfig, resetsOnIdle } from './app/config';
 import {
@@ -150,6 +151,14 @@ function BrandMark() {
   return (
     <div className="brand-mark brand-mark--fixed">
       <img alt="EMBLAVEO" src={logoPrimary} />
+    </div>
+  );
+}
+
+function PfizerMark() {
+  return (
+    <div className="pfizer-mark">
+      <img alt="Pfizer" src={pfizerLogo} />
     </div>
   );
 }
@@ -344,6 +353,7 @@ export default function App() {
   }, [captureRequested, send]);
 
   const session = snapshot.context;
+  const showPfizerLogo = flowState !== 'camera' && flowState !== 'review';
 
   return (
     <div className="app-shell">
@@ -354,6 +364,12 @@ export default function App() {
             <BrandMark />
           </div>
         </div>
+
+        {showPfizerLogo ? (
+          <div className="kiosk__footer-brand">
+            <PfizerMark />
+          </div>
+        ) : null}
 
         {flowState === 'home' ? (
           <section className="hero-screen">

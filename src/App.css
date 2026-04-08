@@ -82,6 +82,15 @@ button {
   line-height: 0;
 }
 
+.kiosk__footer-brand {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 10;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 .flow-badge {
   display: inline-flex;
   align-items: center;
@@ -235,6 +244,22 @@ button {
 .brand-mark img {
   display: block;
   width: clamp(200px, 26vw, 280px);
+  height: auto;
+}
+
+.pfizer-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(0, 13, 69, 0.14);
+}
+
+.pfizer-mark img {
+  display: block;
+  width: clamp(120px, 16vw, 180px);
   height: auto;
 }
 
@@ -540,6 +565,10 @@ button {
     top: 18px;
     left: 18px;
     right: 18px;
+  }
+
+  .kiosk__footer-brand {
+    bottom: 14px;
   }
 
   .button-row {
