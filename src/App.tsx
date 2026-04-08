@@ -430,7 +430,7 @@ export default function App() {
           <ScreenFrame
             eyebrow="Paso 2"
             footer={
-              <div className="button-row">
+              <div className="button-row button-row--camera">
                 <ActionButton onClick={() => send({ type: 'BACK' })} variant="secondary">
                   Volver
                 </ActionButton>
