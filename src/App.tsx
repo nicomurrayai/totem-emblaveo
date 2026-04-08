@@ -388,19 +388,6 @@ export default function App() {
         {flowState === 'consent' ? (
           <ScreenFrame
             eyebrow="Paso 1"
-            footer={
-              <div className="button-row">
-                <ActionButton onClick={() => send({ type: 'BACK' })} variant="secondary">
-                  Volver
-                </ActionButton>
-                <ActionButton
-                  disabled={!session.consentAccepted}
-                  onClick={() => send({ type: 'CONTINUE' })}
-                >
-                  Continuar
-                </ActionButton>
-              </div>
-            }
             title="Antes de empezar, necesitamos tu consentimiento"
           >
             <div className="card">
@@ -424,6 +411,17 @@ export default function App() {
                   experiencia.
                 </span>
               </label>
+              <div className="button-row consent-actions">
+                <ActionButton onClick={() => send({ type: 'BACK' })} variant="secondary">
+                  Volver
+                </ActionButton>
+                <ActionButton
+                  disabled={!session.consentAccepted}
+                  onClick={() => send({ type: 'CONTINUE' })}
+                >
+                  Continuar
+                </ActionButton>
+              </div>
             </div>
           </ScreenFrame>
         ) : null}
