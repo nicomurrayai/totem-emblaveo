@@ -2,7 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('./app/photoArchive', () => ({
+  archiveConfirmedPhoto: vi.fn(async () => ({
+    imageUrl: 'https://example.supabase.co/storage/v1/object/public/kiosk-photos/mock.jpg',
+  })),
+}));
+
 import App from './App';
+import { archiveConfirmedPhoto } from './app/photoArchive';
+
+const archiveConfirmedPhotoMock = vi.mocked(archiveConfirmedPhoto);
 
 function createMockStream() {
   const track = {
@@ -63,6 +72,65 @@ describe('App', () => {
         ).toBeInTheDocument(),
       { timeout: 5_500 },
     );
+  }, 15_000);
+
+  it('archives the confirmed photo without blocking the printing flow', async () => {
+    archiveConfirmedPhotoMock.mockResolvedValueOnce({
+      imageUrl: 'https://example.supabase.co/storage/v1/object/public/kiosk-photos/confirmed.jpg',
+    });
+
+    mockMediaDevices(async () => createMockStream());
+    const user = userEvent.setup();
+
+    render(<App />);
+    await goToConsent(user);
+    await user.click(screen.getByRole('button', { name: 'Tomar foto' }));
+    await screen.findByRole('heading', { name: /Revis/i }, { timeout: 7_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    await waitFor(() => {
+      expect(archiveConfirmedPhotoMock).toHaveBeenCalledTimes(1);
+      expect(archiveConfirmedPhotoMock).toHaveBeenCalledWith(expect.any(Blob));
+    });
+    expect(await screen.findByRole('heading', { name: /imprimiendo/i })).toBeInTheDocument();
+  }, 15_000);
+
+  it('does not archive discarded photos when the user chooses to retake', async () => {
+    mockMediaDevices(async () => createMockStream());
+    const user = userEvent.setup();
+
+    render(<App />);
+    await goToConsent(user);
+    await user.click(screen.getByRole('button', { name: 'Tomar foto' }));
+    await screen.findByRole('heading', { name: /Revis/i }, { timeout: 7_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Repetir' }));
+
+    expect(await screen.findByRole('heading', { name: /Busc/i })).toBeInTheDocument();
+    expect(archiveConfirmedPhotoMock).not.toHaveBeenCalled();
+  }, 15_000);
+
+  it('keeps printing even if archiving the photo fails', async () => {
+    archiveConfirmedPhotoMock.mockRejectedValueOnce(new Error('upload failed'));
+
+    mockMediaDevices(async () => createMockStream());
+    const user = userEvent.setup();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<App />);
+    await goToConsent(user);
+    await user.click(screen.getByRole('button', { name: 'Tomar foto' }));
+    await screen.findByRole('heading', { name: /Revis/i }, { timeout: 7_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByRole('heading', { name: /imprimiendo/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(archiveConfirmedPhotoMock).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+    consoleErrorSpy.mockRestore();
   }, 15_000);
 
   it('shows a permission error when the browser blocks the camera', async () => {

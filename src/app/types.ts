@@ -51,3 +51,9 @@ export interface CapturedPhoto {
   url: string;
   createdAt: number;
 }
+
+export interface ArchivedPhotoRecord {
+  id: string;
+  image_url: string;
+  created_at: string;
+}

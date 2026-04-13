@@ -11,6 +11,7 @@ import { useMachine } from '@xstate/react';
 import logoPrimary from './assets/logo-primary.png';
 import pfizerLogo from './assets/pfizer-logo.png';
 import './App.css';
+import { archiveConfirmedPhoto } from './app/photoArchive';
 import { kioskConfig, resetsOnIdle } from './app/config';
 import {
   capturePhoto,
@@ -354,6 +355,17 @@ export default function App() {
 
   const session = snapshot.context;
   const showPfizerLogo = flowState !== 'camera' && flowState !== 'review';
+  const handleConfirmPrint = () => {
+    const photoToArchive = session.capturedBlob;
+
+    if (photoToArchive) {
+      void archiveConfirmedPhoto(photoToArchive).catch((error: unknown) => {
+        console.error('No pudimos archivar la foto confirmada.', error);
+      });
+    }
+
+    send({ type: 'CONFIRM_PRINT' });
+  };
 
   return (
     <div className="app-shell">
@@ -497,7 +509,7 @@ export default function App() {
                 <ActionButton onClick={() => send({ type: 'RETAKE' })} variant="secondary">
                   Repetir
                 </ActionButton>
-                <ActionButton onClick={() => send({ type: 'CONFIRM_PRINT' })}>
+                <ActionButton onClick={handleConfirmPrint}>
                   Confirmar
                 </ActionButton>
               </div>
