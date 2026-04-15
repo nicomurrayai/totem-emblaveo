@@ -420,8 +420,8 @@ export default function App() {
           >
             <div className="card">
               <p className="card__lead">
-                Al continuar aceptás que tu imagen sea capturada y mostrada en un mural
-                visual de la activación EMBLAVEO.
+                Escaneá el QR que aparece en el tótem para consultar los términos y condiciones.
+                Al continuar, aceptás que tu imagen sea capturada y exhibida en el mural visual de la activación EMBLAVEO.
               </p>
               <label className="consent-toggle">
                 <input
