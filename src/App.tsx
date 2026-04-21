@@ -391,7 +391,7 @@ export default function App() {
                 <p className="hero-screen__eyebrow">EMBLAVEO EXPERIENCE</p>
                 <h1>
                   Sumate con tu foto y sé parte de una nueva era en el tratamiento de las
-                  infecciones multirresistentes
+                  infecciones multirresistentes<sup className="hero-screen__sup">1</sup>
                 </h1>
                 <p className="hero-screen__lead">
                   Acercate al visor, acomodate y completá el recorrido en menos de un

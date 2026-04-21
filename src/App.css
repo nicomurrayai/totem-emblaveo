@@ -163,6 +163,10 @@ button {
   letter-spacing: -0.02em;
 }
 
+.hero-screen__sup {
+  font-size: 0.45em;
+}
+
 .hero-screen__lead,
 .card__lead,
 .printing-screen__lead {
