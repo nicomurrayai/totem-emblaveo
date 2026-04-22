@@ -23,7 +23,9 @@ export interface PhotoArchiveClient {
     from(bucketName: string): PhotoStorageBucket;
   };
   from(tableName: 'kiosk_photos'): {
-    insert(values: Pick<ArchivedPhotoRecord, 'image_url'>): Promise<{ error: ArchiveClientError | null }>;
+    insert(
+      values: Pick<ArchivedPhotoRecord, 'image_url' | 'image_to_print_url'>,
+    ): Promise<{ error: ArchiveClientError | null }>;
   };
 }
 
@@ -45,54 +47,90 @@ function getFileExtension(photo: Blob) {
   }
 }
 
-function createPhotoPath(photo: Blob, now: () => number, randomUUID: () => string) {
-  return `photos/${now()}-${randomUUID()}.${getFileExtension(photo)}`;
+function createOriginalPhotoPath(photo: Blob, fileId: string) {
+  return `photos/${fileId}.${getFileExtension(photo)}`;
 }
 
-async function cleanupUploadedPhoto(bucket: PhotoStorageBucket, path: string) {
-  await bucket.remove([path]);
+function createPrintablePhotoPath(fileId: string) {
+  return `photos/print/${fileId}.jpg`;
+}
+
+async function cleanupUploadedPhotos(bucket: PhotoStorageBucket, paths: string[]) {
+  if (paths.length === 0) {
+    return;
+  }
+
+  await bucket.remove(paths);
 }
 
 export async function archiveConfirmedPhoto(
-  photo: Blob,
+  {
+    originalPhoto,
+    printablePhoto,
+  }: {
+    originalPhoto: Blob;
+    printablePhoto: Blob;
+  },
   options: ArchiveConfirmedPhotoOptions = {},
-): Promise<{ imageUrl: string }> {
+): Promise<{ imageUrl: string; imageToPrintUrl: string }> {
   const client = (options.client ?? getSupabaseClient()) as PhotoArchiveClient;
   const bucketName = options.bucketName ?? getSupabaseBucketName();
   const now = options.now ?? Date.now;
   const randomUUID = options.randomUUID ?? (() => crypto.randomUUID());
+  const fileId = `${now()}-${randomUUID()}`;
 
-  const storagePath = createPhotoPath(photo, now, randomUUID);
+  const originalPath = createOriginalPhotoPath(originalPhoto, fileId);
+  const printablePath = createPrintablePhotoPath(fileId);
   const bucket = client.storage.from(bucketName);
-  const contentType = photo.type || 'image/jpeg';
-  const { error: uploadError } = await bucket.upload(storagePath, photo, {
-    contentType,
+  const { error: originalUploadError } = await bucket.upload(originalPath, originalPhoto, {
+    contentType: originalPhoto.type || 'image/jpeg',
     upsert: false,
   });
 
-  if (uploadError) {
-    throw new Error(`Photo upload failed: ${uploadError.message}`);
+  if (originalUploadError) {
+    throw new Error(`Photo upload failed: ${originalUploadError.message}`);
   }
 
   const {
-    data: { publicUrl },
-  } = bucket.getPublicUrl(storagePath);
+    data: { publicUrl: imageUrl },
+  } = bucket.getPublicUrl(originalPath);
 
-  if (!publicUrl) {
-    await cleanupUploadedPhoto(bucket, storagePath);
+  if (!imageUrl) {
+    await cleanupUploadedPhotos(bucket, [originalPath]);
+    throw new Error('Photo upload succeeded but no public URL was returned.');
+  }
+
+  const { error: printableUploadError } = await bucket.upload(printablePath, printablePhoto, {
+    contentType: printablePhoto.type || 'image/jpeg',
+    upsert: false,
+  });
+
+  if (printableUploadError) {
+    await cleanupUploadedPhotos(bucket, [originalPath]);
+    throw new Error(`Printable photo upload failed: ${printableUploadError.message}`);
+  }
+
+  const {
+    data: { publicUrl: imageToPrintUrl },
+  } = bucket.getPublicUrl(printablePath);
+
+  if (!imageToPrintUrl) {
+    await cleanupUploadedPhotos(bucket, [originalPath, printablePath]);
     throw new Error('Photo upload succeeded but no public URL was returned.');
   }
 
   const { error: insertError } = await client.from('kiosk_photos').insert({
-    image_url: publicUrl,
+    image_url: imageUrl,
+    image_to_print_url: imageToPrintUrl,
   });
 
   if (insertError) {
-    await cleanupUploadedPhoto(bucket, storagePath);
+    await cleanupUploadedPhotos(bucket, [originalPath, printablePath]);
     throw new Error(`Photo archive insert failed: ${insertError.message}`);
   }
 
   return {
-    imageUrl: publicUrl,
+    imageUrl,
+    imageToPrintUrl,
   };
 }

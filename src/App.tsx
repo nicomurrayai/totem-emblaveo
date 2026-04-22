@@ -12,6 +12,7 @@ import logoPrimary from './assets/logo-primary.png';
 import pfizerLogo from './assets/pfizer-logo.png';
 import './App.css';
 import { archiveConfirmedPhoto } from './app/photoArchive';
+import { composePrintablePhoto, preloadPrintFrame } from './app/printComposition';
 import { kioskConfig, resetsOnIdle } from './app/config';
 import {
   capturePhoto,
@@ -287,6 +288,10 @@ export default function App() {
   );
 
   useEffect(() => {
+    void preloadPrintFrame().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     captureRef.current = capture;
     errorHandlerRef.current = (error) => {
       startTransition(() => {
@@ -337,7 +342,23 @@ export default function App() {
         const photo = await captureRef.current?.();
 
         if (!cancelled && photo) {
-          send({ type: 'PHOTO_CAPTURED', photo });
+          let printableBlob = photo.printableBlob;
+
+          try {
+            printableBlob = await composePrintablePhoto(photo.blob);
+          } catch {
+            printableBlob = photo.blob;
+          }
+
+          if (!cancelled) {
+            send({
+              type: 'PHOTO_CAPTURED',
+              photo: {
+                ...photo,
+                printableBlob,
+              },
+            });
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -356,10 +377,11 @@ export default function App() {
   const session = snapshot.context;
   const showPfizerLogo = flowState !== 'camera' && flowState !== 'review';
   const handleConfirmPrint = () => {
-    const photoToArchive = session.capturedBlob;
+    const originalPhoto = session.capturedBlob;
+    const printablePhoto = session.printableBlob ?? originalPhoto;
 
-    if (photoToArchive) {
-      void archiveConfirmedPhoto(photoToArchive).catch((error: unknown) => {
+    if (originalPhoto && printablePhoto) {
+      void archiveConfirmedPhoto({ originalPhoto, printablePhoto }).catch((error: unknown) => {
         console.error('No pudimos archivar la foto confirmada.', error);
       });
     }

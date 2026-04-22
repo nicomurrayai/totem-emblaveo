@@ -5,13 +5,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./app/photoArchive', () => ({
   archiveConfirmedPhoto: vi.fn(async () => ({
     imageUrl: 'https://example.supabase.co/storage/v1/object/public/kiosk-photos/mock.jpg',
+    imageToPrintUrl:
+      'https://example.supabase.co/storage/v1/object/public/kiosk-photos/print/mock.jpg',
   })),
+}));
+
+vi.mock('./app/printComposition', () => ({
+  composePrintablePhoto: vi.fn(async () => new Blob(['print-ready'], { type: 'image/jpeg' })),
+  preloadPrintFrame: vi.fn(async () => undefined),
 }));
 
 import App from './App';
 import { archiveConfirmedPhoto } from './app/photoArchive';
+import { composePrintablePhoto } from './app/printComposition';
 
 const archiveConfirmedPhotoMock = vi.mocked(archiveConfirmedPhoto);
+const composePrintablePhotoMock = vi.mocked(composePrintablePhoto);
 
 function createMockStream() {
   const track = {
@@ -75,8 +84,12 @@ describe('App', () => {
   }, 15_000);
 
   it('archives the confirmed photo without blocking the printing flow', async () => {
+    const printableBlob = new Blob(['print-ready'], { type: 'image/jpeg' });
+    composePrintablePhotoMock.mockResolvedValueOnce(printableBlob);
     archiveConfirmedPhotoMock.mockResolvedValueOnce({
       imageUrl: 'https://example.supabase.co/storage/v1/object/public/kiosk-photos/confirmed.jpg',
+      imageToPrintUrl:
+        'https://example.supabase.co/storage/v1/object/public/kiosk-photos/print/confirmed.jpg',
     });
 
     mockMediaDevices(async () => createMockStream());
@@ -86,14 +99,21 @@ describe('App', () => {
     await goToConsent(user);
     await user.click(screen.getByRole('button', { name: 'Tomar foto' }));
     await screen.findByRole('heading', { name: /Revis/i }, { timeout: 7_000 });
+    const reviewPhoto = screen.getByAltText('Foto capturada');
+
+    expect(reviewPhoto).toHaveAttribute('src', 'blob:mock-photo');
 
     await user.click(screen.getByRole('button', { name: 'Confirmar' }));
 
     await waitFor(() => {
       expect(archiveConfirmedPhotoMock).toHaveBeenCalledTimes(1);
-      expect(archiveConfirmedPhotoMock).toHaveBeenCalledWith(expect.any(Blob));
+      expect(archiveConfirmedPhotoMock).toHaveBeenCalledWith({
+        originalPhoto: expect.any(Blob),
+        printablePhoto: printableBlob,
+      });
     });
     expect(await screen.findByRole('heading', { name: /imprimiendo/i })).toBeInTheDocument();
+    expect(screen.getByAltText('Vista previa de impresión')).toHaveAttribute('src', 'blob:mock-photo');
   }, 15_000);
 
   it('does not archive discarded photos when the user chooses to retake', async () => {
@@ -131,6 +151,30 @@ describe('App', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
     consoleErrorSpy.mockRestore();
+  }, 15_000);
+
+  it('falls back to the original blob when the print composition fails', async () => {
+    composePrintablePhotoMock.mockRejectedValueOnce(new Error('frame failed'));
+
+    mockMediaDevices(async () => createMockStream());
+    const user = userEvent.setup();
+
+    render(<App />);
+    await goToConsent(user);
+    await user.click(screen.getByRole('button', { name: 'Tomar foto' }));
+    await screen.findByRole('heading', { name: /Revis/i }, { timeout: 7_000 });
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    await waitFor(() => {
+      expect(archiveConfirmedPhotoMock).toHaveBeenCalledTimes(1);
+    });
+
+    const archiveCall = archiveConfirmedPhotoMock.mock.calls[0]?.[0];
+
+    expect(archiveCall?.originalPhoto).toBeInstanceOf(Blob);
+    expect(archiveCall?.printablePhoto).toBe(archiveCall?.originalPhoto);
+    expect(await screen.findByRole('heading', { name: /imprimiendo/i })).toBeInTheDocument();
   }, 15_000);
 
   it('shows a permission error when the browser blocks the camera', async () => {

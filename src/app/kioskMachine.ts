@@ -41,6 +41,7 @@ function createInitialContext(config: KioskConfig): KioskContext {
   return {
     consentAccepted: false,
     capturedBlob: null,
+    printableBlob: null,
     capturedUrl: null,
     captureTs: null,
     cameraError: undefined,
@@ -109,6 +110,7 @@ export function createKioskMachine(options: MachineOptions = {}) {
         revokeObjectUrl(context.capturedUrl);
         return {
           capturedBlob: null,
+          printableBlob: null,
           capturedUrl: null,
           captureTs: null,
           countdownValue: config.countdownSeconds,
@@ -124,6 +126,7 @@ export function createKioskMachine(options: MachineOptions = {}) {
 
         return {
           capturedBlob: event.photo.blob,
+          printableBlob: event.photo.printableBlob,
           capturedUrl: event.photo.url,
           captureTs: event.photo.createdAt,
           cameraError: undefined,
@@ -232,7 +235,7 @@ export function createKioskMachine(options: MachineOptions = {}) {
           src: 'printPhoto',
           input: ({ context }) => ({
             printer,
-            photo: context.capturedBlob as Blob,
+            photo: context.printableBlob ?? (context.capturedBlob as Blob),
             createdAt: context.captureTs ?? Date.now(),
           }),
           onDone: {

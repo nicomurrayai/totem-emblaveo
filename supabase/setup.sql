@@ -9,6 +9,9 @@ create table if not exists public.kiosk_photos (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+alter table public.kiosk_photos
+add column if not exists image_to_print_url text;
+
 alter table public.kiosk_photos enable row level security;
 
 drop policy if exists "Anon can insert kiosk photo URLs" on public.kiosk_photos;

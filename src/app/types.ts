@@ -21,6 +21,7 @@ export interface CameraErrorDetails {
 export interface PhotoSession {
   consentAccepted: boolean;
   capturedBlob: Blob | null;
+  printableBlob: Blob | null;
   capturedUrl: string | null;
   captureTs: number | null;
   cameraError?: CameraErrorDetails;
@@ -48,6 +49,7 @@ export interface PrinterAdapter {
 
 export interface CapturedPhoto {
   blob: Blob;
+  printableBlob: Blob;
   url: string;
   createdAt: number;
 }
@@ -55,5 +57,6 @@ export interface CapturedPhoto {
 export interface ArchivedPhotoRecord {
   id: string;
   image_url: string;
+  image_to_print_url: string | null;
   created_at: string;
 }

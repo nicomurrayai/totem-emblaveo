@@ -130,6 +130,7 @@ export async function capturePhoto(video: HTMLVideoElement): Promise<CapturedPho
 
   return {
     blob,
+    printableBlob: blob,
     url: URL.createObjectURL(blob),
     createdAt: Date.now(),
   };
