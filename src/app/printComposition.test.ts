@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { composePrintablePhoto, printCompositionConfig, printWindow } from './printComposition'
 
 describe('composePrintablePhoto', () => {
-  it('generates a 900x1600 jpeg and places the photo with centered cover sizing', async () => {
+  it('generates a 1218x1864 jpeg and places the photo with centered contain sizing', async () => {
     const drawImage = vi.fn()
     const context = {
       beginPath: vi.fn(),
@@ -22,7 +22,10 @@ describe('composePrintablePhoto', () => {
 
     const outputBlob = new Blob(['print-ready'], { type: 'image/jpeg' })
     const sourcePhoto = new Blob(['captured'], { type: 'image/jpeg' })
-    const frameImage = { width: 900, height: 1600 } as DrawableTestImage
+    const frameImage = {
+      width: printCompositionConfig.outputWidth,
+      height: printCompositionConfig.outputHeight,
+    } as DrawableTestImage
     const photoImage = { width: 1000, height: 1000 } as DrawableTestImage
 
     const result = await composePrintablePhoto(sourcePhoto, {
@@ -42,25 +45,32 @@ describe('composePrintablePhoto', () => {
 
     expect(canvas.width).toBe(printCompositionConfig.outputWidth)
     expect(canvas.height).toBe(printCompositionConfig.outputHeight)
-    expect(context.rect).toHaveBeenCalledWith(66, 223, 767, 1154)
-    expect(drawImage).toHaveBeenCalledTimes(5)
+    expect(context.rect).toHaveBeenCalledWith(221, expect.closeTo(247), 776, 1223)
+    expect(drawImage).toHaveBeenCalledTimes(6)
 
-    const coverPlacement = printWindow.getCoverPlacement(
+    const containPlacement = printWindow.getContainPlacement(
       photoImage.width,
       photoImage.height,
       printWindow.getRect(printCompositionConfig.outputWidth, printCompositionConfig.outputHeight),
     )
 
-    expect(coverPlacement.x).toBeCloseTo(-127.5)
-    expect(coverPlacement.y).toBe(223)
-    expect(coverPlacement.width).toBeCloseTo(1154)
-    expect(coverPlacement.height).toBeCloseTo(1154)
+    expect(containPlacement.x).toBe(221)
+    expect(containPlacement.y).toBeCloseTo(470.5)
+    expect(containPlacement.width).toBe(776)
+    expect(containPlacement.height).toBe(776)
     expect(drawImage.mock.calls[0]).toEqual([
+      frameImage,
+      0,
+      0,
+      printCompositionConfig.outputWidth,
+      printCompositionConfig.outputHeight,
+    ])
+    expect(drawImage.mock.calls[1]).toEqual([
       photoImage,
-      coverPlacement.x,
-      coverPlacement.y,
-      coverPlacement.width,
-      coverPlacement.height,
+      containPlacement.x,
+      containPlacement.y,
+      containPlacement.width,
+      containPlacement.height,
     ])
     expect(result).toBe(outputBlob)
   })

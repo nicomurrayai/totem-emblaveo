@@ -1,13 +1,16 @@
-import frameAssetUrl from '../assets/marco.jpeg'
+import frameAssetUrl from '../assets/marco.png'
 
-const outputWidth = 900
-const outputHeight = 1600
+const frameDesignWidth = 1218
+const frameDesignHeight = 1864
+
+const outputWidth = frameDesignWidth
+const outputHeight = frameDesignHeight
 
 const frameWindow = {
-  x: 66 / outputWidth,
-  y: 223 / outputHeight,
-  width: 767 / outputWidth,
-  height: 1154 / outputHeight,
+  x: 221 / frameDesignWidth,
+  y: 247 / frameDesignHeight,
+  width: 776 / frameDesignWidth,
+  height: 1223 / frameDesignHeight,
 }
 
 type DrawableImage = CanvasImageSource & {
@@ -93,8 +96,8 @@ function getWindowRect(width: number, height: number): Rect {
   }
 }
 
-function getCoverPlacement(sourceWidth: number, sourceHeight: number, targetRect: Rect): Rect {
-  const scale = Math.max(targetRect.width / sourceWidth, targetRect.height / sourceHeight)
+function getContainPlacement(sourceWidth: number, sourceHeight: number, targetRect: Rect): Rect {
+  const scale = Math.min(targetRect.width / sourceWidth, targetRect.height / sourceHeight)
   const width = sourceWidth * scale
   const height = sourceHeight * scale
 
@@ -192,7 +195,9 @@ export async function composePrintablePhoto(
   const [frame, photoImage] = await Promise.all([loadFrame(), loadPhoto(photo)])
   const destinationWindow = getWindowRect(outputWidth, outputHeight)
   const sourceWindow = getWindowRect(frame.width, frame.height)
-  const photoPlacement = getCoverPlacement(photoImage.width, photoImage.height, destinationWindow)
+  const photoPlacement = getContainPlacement(photoImage.width, photoImage.height, destinationWindow)
+
+  context.drawImage(frame, 0, 0, outputWidth, outputHeight)
 
   context.save()
   context.beginPath()
@@ -225,5 +230,5 @@ export const printCompositionConfig = {
 export const printWindow = {
   getRect: getWindowRect,
   normalized: frameWindow,
-  getCoverPlacement,
+  getContainPlacement,
 }
