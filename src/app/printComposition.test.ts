@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { composePrintablePhoto, printCompositionConfig, printWindow } from './printComposition'
 
 describe('composePrintablePhoto', () => {
-  it('generates a 1218x1864 jpeg and places the photo with centered contain sizing', async () => {
+  it('generates a 1218x1864 jpeg and places the photo with centered cover sizing', async () => {
     const drawImage = vi.fn()
     const context = {
       beginPath: vi.fn(),
@@ -48,16 +48,16 @@ describe('composePrintablePhoto', () => {
     expect(context.rect).toHaveBeenCalledWith(221, expect.closeTo(247), 776, 1223)
     expect(drawImage).toHaveBeenCalledTimes(6)
 
-    const containPlacement = printWindow.getContainPlacement(
+    const coverPlacement = printWindow.getCoverPlacement(
       photoImage.width,
       photoImage.height,
       printWindow.getRect(printCompositionConfig.outputWidth, printCompositionConfig.outputHeight),
     )
 
-    expect(containPlacement.x).toBe(221)
-    expect(containPlacement.y).toBeCloseTo(470.5)
-    expect(containPlacement.width).toBe(776)
-    expect(containPlacement.height).toBe(776)
+    expect(coverPlacement.x).toBeCloseTo(-2.5)
+    expect(coverPlacement.y).toBeCloseTo(247)
+    expect(coverPlacement.width).toBe(1223)
+    expect(coverPlacement.height).toBe(1223)
     expect(drawImage.mock.calls[0]).toEqual([
       frameImage,
       0,
@@ -67,10 +67,10 @@ describe('composePrintablePhoto', () => {
     ])
     expect(drawImage.mock.calls[1]).toEqual([
       photoImage,
-      containPlacement.x,
-      containPlacement.y,
-      containPlacement.width,
-      containPlacement.height,
+      coverPlacement.x,
+      coverPlacement.y,
+      coverPlacement.width,
+      coverPlacement.height,
     ])
     expect(result).toBe(outputBlob)
   })

@@ -96,8 +96,8 @@ function getWindowRect(width: number, height: number): Rect {
   }
 }
 
-function getContainPlacement(sourceWidth: number, sourceHeight: number, targetRect: Rect): Rect {
-  const scale = Math.min(targetRect.width / sourceWidth, targetRect.height / sourceHeight)
+function getCoverPlacement(sourceWidth: number, sourceHeight: number, targetRect: Rect): Rect {
+  const scale = Math.max(targetRect.width / sourceWidth, targetRect.height / sourceHeight)
   const width = sourceWidth * scale
   const height = sourceHeight * scale
 
@@ -195,7 +195,7 @@ export async function composePrintablePhoto(
   const [frame, photoImage] = await Promise.all([loadFrame(), loadPhoto(photo)])
   const destinationWindow = getWindowRect(outputWidth, outputHeight)
   const sourceWindow = getWindowRect(frame.width, frame.height)
-  const photoPlacement = getContainPlacement(photoImage.width, photoImage.height, destinationWindow)
+  const photoPlacement = getCoverPlacement(photoImage.width, photoImage.height, destinationWindow)
 
   context.drawImage(frame, 0, 0, outputWidth, outputHeight)
 
@@ -230,5 +230,5 @@ export const printCompositionConfig = {
 export const printWindow = {
   getRect: getWindowRect,
   normalized: frameWindow,
-  getContainPlacement,
+  getCoverPlacement,
 }
